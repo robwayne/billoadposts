@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Feed</title>
+<style>
+  :root{
+    --bg:#000;
+    --surface:#0c0c0c;
+    --text:#f2f2f2;
+    --muted:#8a8a8e;
+    --line:#1f1f21;
+    --accent:#3a86ff;
+    --danger:#ff453a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text);
+    display:flex;flex-direction:column;
+    height:100dvh;overflow:hidden;
+  }
+
+  header{
+    flex:0 0 auto;padding:13px 16px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:12px;
+  }
+  header h1{font-size:16px;font-weight:600;margin:0;letter-spacing:-0.01em;}
+  .gear{
+    margin-left:auto;width:32px;height:32px;border:0;background:transparent;
+    color:var(--muted);font-size:18px;line-height:1;cursor:pointer;
+  }
+
+  #feed{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+  .post{border-bottom:8px solid #0a0a0a;padding-bottom:4px;}
+  .phead{display:flex;align-items:center;gap:10px;padding:12px 16px 10px;}
+  .brandav{
+    width:32px;height:32px;border-radius:50%;background:#2c2c2e;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;color:#d6d6d8;
+  }
+  .pname{font-size:14px;font-weight:600;}
+  .psub{font-size:11px;color:var(--muted);margin-top:1px;}
+  .media{
+    position:relative;height:200px;background:#141416;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    color:#3a3a3e;font-size:12px;letter-spacing:.08em;overflow:hidden;
+  }
+  .media img{
+    width:100%;height:100%;object-fit:cover;display:block;
+  }
+  .media img.hide{display:none;}
+  .cap{padding:11px 16px 4px;font-size:14px;line-height:1.4;}
+  .cap b{font-weight:600;}
+  .clabel{
+    padding:10px 16px 4px;font-size:12px;color:var(--muted);
+  }
+
+  .row{
+    display:flex;gap:11px;padding:9px 16px;align-items:flex-start;
+    transition:background .15s ease, opacity .22s ease, transform .22s ease;
+  }
+  .row.selected{background:var(--surface);}
+  .row.removing{opacity:0;transform:translateX(-18px);}
+  .av{
+    flex:0 0 auto;width:30px;height:30px;border-radius:50%;
+    background:#2c2c2e;color:#d6d6d8;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:600;
+  }
+  .body{flex:1 1 auto;min-width:0;}
+  .meta{font-size:12px;color:var(--muted);}
+  .meta b{color:var(--text);font-weight:600;}
+  .txt{font-size:15px;line-height:1.35;margin-top:2px;word-wrap:break-word;}
+  .sub2{font-size:11px;color:var(--muted);margin-top:4px;}
+  .del{
+    flex:0 0 auto;border:0;border-radius:14px;padding:6px 12px;
+    background:var(--danger);color:#fff;font-size:13px;font-weight:600;
+    cursor:pointer;display:none;align-self:center;
+  }
+  .row.selected .del{display:block;}
+
+  .compose{display:flex;gap:9px;align-items:center;padding:9px 16px 13px;}
+  .compose input{
+    flex:1 1 auto;min-width:0;background:var(--surface);
+    border:1px solid var(--line);border-radius:18px;
+    padding:9px 13px;color:var(--text);font-size:14px;outline:none;font-family:inherit;
+  }
+  .compose input::placeholder{color:var(--muted);}
+  .compose input:focus{border-color:#333;}
+  .compose button{
+    border:0;background:transparent;color:var(--accent);
+    font-size:14px;font-weight:600;padding:7px 3px;cursor:pointer;opacity:.4;
+    font-family:inherit;
+  }
+  .compose button.on{opacity:1;}
+
+  #panel{
+    position:fixed;inset:0;background:rgba(0,0,0,.95);
+    padding:28px 22px;display:none;flex-direction:column;gap:18px;z-index:9;
+    overflow-y:auto;
+  }
+  #panel.open{display:flex;}
+  #panel h2{font-size:17px;margin:0;font-weight:600;}
+  #panel p{font-size:13px;color:var(--muted);margin:0;line-height:1.5;}
+  #panel label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px;}
+  #panel input{
+    width:100%;background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;padding:11px 13px;color:var(--text);font-size:15px;
+    outline:none;font-family:inherit;
+  }
+  .btns{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;}
+  .btns button{
+    border:1px solid var(--line);background:var(--surface);color:var(--text);
+    border-radius:10px;padding:11px 16px;font-size:14px;cursor:pointer;font-family:inherit;
+  }
+  .btns button.primary{background:#fff;color:#000;border-color:#fff;font-weight:600;}
+  @media (prefers-reduced-motion: reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Feed</h1>
+  <button class="gear" id="gear" aria-label="Settings">⚙</button>
+</header>
+
+<div id="feed"></div>
+
+<div id="panel">
+  <h2>Set up before you record</h2>
+  <p>Put your own handle in so the comments read as yours. Nothing here is saved or sent anywhere. Close this panel before you start filming.</p>
+  <div>
+    <label for="handle">Your handle</label>
+    <input id="handle" type="text" placeholder="yourhandle" autocapitalize="none" autocorrect="off">
+  </div>
+  <div class="btns">
+    <button class="primary" id="close">Done</button>
+    <button id="reset">Reset all comments</button>
+  </div>
+  <p>Tap any comment to bring up Delete. Reset puts every comment back so you can film the sequence again.</p>
+</div>
+
+<script>
+var HANDLE = "yourhandle";
+
+var POSTS = [
+  {
+    img: "ad1.jpg",
+    cap: "8 gummies. One pouch. Made in the USA and third party lab tested.",
+    when: "4mo",
+    comments: [
+      { t:"fake", a:"4mo" },
+      { t:"scam", a:"4mo" },
+      { t:"who is falling for this", a:"4mo" },
+      { t:"nope", a:"4mo" },
+      { t:"come on now", a:"4mo" },
+      { t:"marketing", a:"3mo" }
+    ]
+  },
+  {
+    img: "ad2.jpg",
+    cap: "Over 20,000 customers. 4.7 out of 5. 30 day money back guarantee.",
+    when: "2mo",
+    comments: [
+      { t:"'mushroom' gummies, yeah right", a:"2mo" },
+      { t:"who believes this garbage?", a:"2mo" },
+      { t:"will never waste my money on this scam", a:"2mo" },
+      { t:"people will buy anything \uD83E\uDD26\uD83C\uDFFE\u200D\u2642\uFE0F", a:"2mo" },
+      { t:"sure buddy", a:"1mo" },
+      { t:"still fake", a:"1mo" }
+    ]
+  },
+  {
+    img: "ad3.jpg",
+    cap: "Free sample pack. Just cover shipping.",
+    when: "2d",
+    comments: [
+      { t:"nothing this cheap can actually be good", a:"2d" },
+      { t:"only reason it's so cheap is cuz it doesn't work", a:"2d" },
+      { t:"scam", a:"1d" },
+      { t:"lol", a:"1d" },
+      { t:"nah", a:"1d" },
+      { t:"not buying it", a:"5h" }
+    ]
+  }
+];
+
+var feed = document.getElementById("feed");
+var panel = document.getElementById("panel");
+var handleInput = document.getElementById("handle");
+
+function clean(){ return HANDLE.replace(/^@/,""); }
+function initial(){ var h = clean(); return h ? h.charAt(0).toUpperCase() : "Y"; }
+
+function clearSelected(){
+  var sel = feed.querySelectorAll(".row.selected");
+  for (var i=0;i<sel.length;i++) sel[i].classList.remove("selected");
+}
+
+function makeRow(text, ago){
+  var row = document.createElement("div");
+  row.className = "row";
+
+  var av = document.createElement("div");
+  av.className = "av";
+  av.textContent = initial();
+
+  var body = document.createElement("div");
+  body.className = "body";
+
+  var meta = document.createElement("div");
+  meta.className = "meta";
+  var b = document.createElement("b");
+  b.textContent = clean();
+  meta.appendChild(b);
+  meta.appendChild(document.createTextNode("  \u00B7  " + ago));
+
+  var txt = document.createElement("div");
+  txt.className = "txt";
+  txt.textContent = text;
+
+  var sub = document.createElement("div");
+  sub.className = "sub2";
+  sub.textContent = "Reply";
+
+  body.appendChild(meta);
+  body.appendChild(txt);
+  body.appendChild(sub);
+
+  var del = document.createElement("button");
+  del.className = "del";
+  del.textContent = "Delete";
+  del.addEventListener("click", function(e){
+    e.stopPropagation();
+    row.classList.add("removing");
+    setTimeout(function(){
+      if (row.parentNode) row.parentNode.removeChild(row);
+    }, 220);
+  });
+
+  row.addEventListener("click", function(){
+    var was = row.classList.contains("selected");
+    clearSelected();
+    if (!was) row.classList.add("selected");
+  });
+
+  row.appendChild(av);
+  row.appendChild(body);
+  row.appendChild(del);
+  return row;
+}
+
+function makePost(p, idx){
+  var post = document.createElement("div");
+  post.className = "post";
+
+  var phead = document.createElement("div");
+  phead.className = "phead";
+  var bav = document.createElement("div");
+  bav.className = "brandav";
+  bav.textContent = "RT";
+  var nameWrap = document.createElement("div");
+  var pname = document.createElement("div");
+  pname.className = "pname";
+  pname.textContent = "roadtrip";
+  var psub = document.createElement("div");
+  psub.className = "psub";
+  psub.textContent = "Sponsored  \u00B7  " + p.when;
+  nameWrap.appendChild(pname);
+  nameWrap.appendChild(psub);
+  phead.appendChild(bav);
+  phead.appendChild(nameWrap);
+
+  var media = document.createElement("div");
+  media.className = "media";
+  media.textContent = "AD " + (idx + 1);
+  if (p.img){
+    var im = document.createElement("img");
+    im.alt = "";
+    im.addEventListener("load", function(){ media.textContent = ""; media.appendChild(im); });
+    im.addEventListener("error", function(){ im.classList.add("hide"); });
+    im.src = p.img;
+  }
+
+  var cap = document.createElement("div");
+  cap.className = "cap";
+  var capb = document.createElement("b");
+  capb.textContent = "roadtrip ";
+  cap.appendChild(capb);
+  cap.appendChild(document.createTextNode(p.cap));
+
+  var clabel = document.createElement("div");
+  clabel.className = "clabel";
+  clabel.textContent = "Your comments";
+
+  post.appendChild(phead);
+  post.appendChild(media);
+  post.appendChild(cap);
+  post.appendChild(clabel);
+
+  var list = document.createElement("div");
+  for (var i=0;i<p.comments.length;i++){
+    list.appendChild(makeRow(p.comments[i].t, p.comments[i].a));
+  }
+  post.appendChild(list);
+
+  var compose = document.createElement("div");
+  compose.className = "compose";
+  var input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Add a comment...";
+  input.setAttribute("autocomplete","off");
+  input.setAttribute("autocapitalize","none");
+  input.setAttribute("autocorrect","off");
+  var btn = document.createElement("button");
+  btn.textContent = "Post";
+
+  function send(){
+    var v = input.value.trim();
+    if (!v) return;
+    list.insertBefore(makeRow(v, "now"), list.firstChild);
+    input.value = "";
+    btn.classList.remove("on");
+    input.blur();
+  }
+  btn.addEventListener("click", send);
+  input.addEventListener("input", function(){
+    if (input.value.trim()) btn.classList.add("on");
+    else btn.classList.remove("on");
+  });
+  input.addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); send(); }
+  });
+
+  compose.appendChild(input);
+  compose.appendChild(btn);
+  post.appendChild(compose);
+
+  return post;
+}
+
+function render(){
+  feed.innerHTML = "";
+  for (var i=0;i<POSTS.length;i++){
+    feed.appendChild(makePost(POSTS[i], i));
+  }
+}
+
+function refreshHandle(){
+  var rows = feed.querySelectorAll(".row");
+  for (var i=0;i<rows.length;i++){
+    rows[i].querySelector(".av").textContent = initial();
+    rows[i].querySelector(".meta b").textContent = clean();
+  }
+}
+
+document.getElementById("gear").addEventListener("click", function(){
+  handleInput.value = HANDLE;
+  panel.classList.add("open");
+});
+document.getElementById("close").addEventListener("click", function(){
+  var v = handleInput.value.trim();
+  if (v){ HANDLE = v; refreshHandle(); }
+  panel.classList.remove("open");
+});
+document.getElementById("reset").addEventListener("click", function(){
+  render(); refreshHandle(); panel.classList.remove("open");
+});
+
+render();
+</script>
+</body>
+</html>
